@@ -80,7 +80,7 @@ int buffer_read(size_t * buf, size_t count, size_t size, uint64_t offset)
 
 int sfs_mount(char * path)
 {
-	printf("Mounting SFS image %s", path);
+	printf("Mounting SFS image %s\n", path);
 	if(buffer_open(path))
 		return 1;
 	printf("Superblock:\ntimestamp: 0x%" PRIX64 "\ndata area: %" PRIu64 " blocks\nMagic?: %" PRIX32 "\n\
@@ -92,9 +92,49 @@ checksum?: %s\n",
 	return 0;
 }
 
+void print_pretty(uint8_t * buf, int nbytes)
+{
+	for(int i = 0; i < nbytes; i++)
+	{
+		for(int j = 0; j < 16; j++, i++)
+		{
+			if(j == 8)
+			   	printf("  ");
+			printf("%02" PRIX8 " ", buf[i]);
+		}
+		printf("\n");
+	}
+
+}
+struct IndexEntry{
+	uint8_t type;
+};
+int sfs_atos(uint8_t * buf, int len, char* s)
+{
+	for(int i = 0; buf[i] != 0 && i < len; i++)
+		*(s + i) = buf[i];
+	return 0;
+}
 int sfs_open(char * path, char * mode)
 {
-	uint64_t buf[5]; 
-	buffer_read(buf, 5, sizeof(uint64_t), 0x194);
-	printf("buffer_read test: timestamp := %"PRIX64"\n",buf[0]);
+	unsigned int entry;
+	struct IndexEntry index_entry;
+	entry = SFS_Superblock.total_blocks << (SFS_Superblock.block_size + 7);
+	uint8_t buf[64]; 
+	do{
+		entry -= 64;
+		buffer_read((size_t *)buf, 64, sizeof(uint8_t), entry);
+		index_entry.type = buf[0];
+		print_pretty(buf, 64);
+		if(index_entry.type == FILE_ENTRY)
+		{
+			char str[30];
+			sfs_atos(&buf[0x22], 30, str);
+			printf("File found:\nname: %s\n", str);
+		}
+	} while(index_entry.type != START_MARKER);	
+	if(index_entry.type == START_MARKER)
+		printf("No files found\n");
+//	for(entry-=64;index_entry.typ
+
 }

@@ -4,4 +4,13 @@
 int sfs_open(char * path, char * mode);
 int sfs_mount(char* path);
 
+#define VOLUMEID		0x01
+#define START_MARKER	0x02
+#define UNUSED_ENTRY	0x10
+#define DIRECTORY_ENTRY	0x11
+#define FILE_ENTRY		0x12
+#define UNUSABLE_ENTRY	0x18
+#define	DELETED_FLAG	0x08
+#define CONTINUATION	0x20
+
 #endif
