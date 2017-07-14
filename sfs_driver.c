@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <inttypes.h>
-
+#include <string.h>
 #include "./sfs.h"
 
 struct sfs_superblock {
@@ -71,7 +71,7 @@ int buffer_open(char * path)
 	return 0;
 }
 
-int buffer_read(size_t * buf, size_t count, size_t size, uint64_t offset)
+int buffer_read(void * buf, size_t count, size_t size, uint64_t offset)
 {
 	fseek(image, offset, SEEK_SET);
 	fread(buf, size, count, image);
@@ -91,10 +91,10 @@ checksum?: %s\n",
 	"Not yet implemented\0");
 	return 0;
 }
-
+/* nbytes must be a multiple of 64*/
 void print_pretty(uint8_t * buf, int nbytes)
 {
-	for(int i = 0; i < nbytes; i++)
+	for(int i = 0; i < nbytes;)
 	{
 		for(int j = 0; j < 16; j++, i++)
 		{
@@ -109,18 +109,24 @@ void print_pretty(uint8_t * buf, int nbytes)
 struct IndexEntry{
 	uint8_t type;
 };
+/* Returns length of s
+ * */
 int sfs_atos(uint8_t * buf, int len, char* s)
 {
-	for(int i = 0; buf[i] != 0 && i < len; i++)
+	int i = 0;
+	for(; buf[i] != 0 && i < len; i++)
 		*(s + i) = buf[i];
-	return 0;
+	return i-1;
 }
-int sfs_open(char * path, char * mode)
+/* Returns offset of file entry from base in bytes
+ * */
+uint64_t sfs_open(char * path)
 {
-	unsigned int entry;
+	uint64_t entry;
 	struct IndexEntry index_entry;
 	entry = SFS_Superblock.total_blocks << (SFS_Superblock.block_size + 7);
-	uint8_t buf[64]; 
+	printf("media size: 0x%"PRIx64" B\n", entry);
+	uint8_t buf[64];
 	do{
 		entry -= 64;
 		buffer_read((size_t *)buf, 64, sizeof(uint8_t), entry);
@@ -131,10 +137,35 @@ int sfs_open(char * path, char * mode)
 			char str[30];
 			sfs_atos(&buf[0x22], 30, str);
 			printf("File found:\nname: %s\n", str);
+			if(strcmp(str, path) == 0){
+				printf("File opened\n");
+				return entry;
+			}
 		}
-	} while(index_entry.type != START_MARKER);	
-	if(index_entry.type == START_MARKER)
-		printf("No files found\n");
-//	for(entry-=64;index_entry.typ
+	} while(index_entry.type != START_MARKER);
+	printf("Failed to open file");
+	return 0;	
+}
+int sfs_read(size_t file_offset, uint8_t * buf, size_t count)
+{
+	uint64_t base = file_offset;
+	uint8_t n_continuation;
+	uint64_t timestamp;
+	uint64_t block_start;
+	uint64_t block_end;
+	uint64_t file_length;
+	uint8_t filename_base[30];
+	buffer_read(&n_continuation,	1, sizeof(uint8_t) , base + 0x01);
+	buffer_read(&timestamp,			1, sizeof(uint64_t), base + 0x02);
+	buffer_read(&block_start,		1, sizeof(uint64_t), base + 0x0A);
+	buffer_read(&block_end,			1, sizeof(uint64_t), base + 0x12);
+	buffer_read(&file_length,		1, sizeof(uint64_t), base + 0x1A);
+	buffer_read(filename_base,		30,sizeof(uint8_t) , base + 0x22);					
+	char name[30];
+	sfs_atos(filename_base, 30, name);
+	printf("Reading file:\nname:%s\ncontinuation entries: %"PRIu8"\nstarting block: 0x%"PRIx64"\n\
+ending block: 0x%"PRIx64"\nlength: 0x%"PRIx64" B\ntimestamp: 0x%"PRIx64"\nindex entry 0x%"PRIx64" B from start of medium\n",
+	name, n_continuation, block_start, block_end, file_length, timestamp, base);
 
+	buffer_read(buf, count, 1, block_start * SFS_Superblock.block_size * 256);
 }

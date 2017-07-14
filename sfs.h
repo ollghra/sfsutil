@@ -1,7 +1,10 @@
 #ifndef _LIBC_SFS
 #define _LIBC_SFS
 
-int sfs_open(char * path, char * mode);
+#include <stdint.h>
+
+uint64_t sfs_open(char * path);
+int sfs_read(size_t file_offset, uint8_t * buf, size_t count);
 int sfs_mount(char* path);
 
 #define VOLUMEID		0x01
@@ -12,5 +15,7 @@ int sfs_mount(char* path);
 #define UNUSABLE_ENTRY	0x18
 #define	DELETED_FLAG	0x08
 #define CONTINUATION	0x20
+
+void print_pretty(uint8_t * buf, int nbytes);
 
 #endif
