@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <getopt.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include "./sfs.h"
 
@@ -17,7 +18,7 @@ int main(int argc, char **argv)
 		unsigned int delete;
 		unsigned int info;
 	}f;
-	char * imgpath, * filepath;
+	char * imgpath = "sfsimg.img", * filepath = "deadbaba.txt";
 	uint64_t foffset, to_read_bytes = 64;
 	int c;
 	while(1)
@@ -37,28 +38,32 @@ int main(int argc, char **argv)
 		};
 		int option_index = 0;
 		c = getopt_long(argc, argv, "m:o:r:w:c:d:i", long_options, &option_index);
-		if (c==-1) break;
+		
+		if (c == -1) break;
+		
 		switch(c)
 		{
 			case 0:
-				if(long_options[option_index].flag != 0)
+				switch(*long_options[option_index].flag){
+				case 'm':
+					imgpath = malloc(sizeof optarg);
+					strcpy(imgpath, optarg);
+					printf("image to mount: %s\n", imgpath);
 					break;
-				printf("option %s%s%s\n", long_options[option_index].name, optarg ? " with arg ": "", optarg ? optarg:"");
-				break;
-			case 'm':
-				imgpath = strdup(optarg);
-				break;
-			case 'o':
-				filepath = strdup(optarg);
-				break;
-			case 'r':
-				to_read_bytes = atoi(optarg);
-				break;
-			case 'w':case 'c':case 'd':case 'i':
-				printf("Unimplemented");
-			default:
-				printf("Unrecognised");		
-				return -1;
+				case 'o':
+					filepath = strdup(optarg);
+					printf("file to open: %s\n", filepath);
+					break;
+				case 'r':
+					to_read_bytes = atoi(optarg);
+					printf("Bytes to read: 0x%"PRIX64"\n", to_read_bytes);
+					break;
+				case 'w':case 'c':case 'd':case 'i':
+					printf("Unimplemented\n");
+				default:
+					printf("Unrecognised\n");		
+					return -1;
+				}
 		}
 	}
 	if(verbose_flag)
@@ -73,18 +78,22 @@ int main(int argc, char **argv)
 	if(f.read)
 		if(f.mount && f.open)
 		{
+			
 			sfs_mount(imgpath);
+			printf("Searching for file %s\n", filepath);
 			foffset = sfs_open(filepath);
 			if(foffset)
 			{
 				uint8_t buffer[to_read_bytes];
 				sfs_read(foffset, buffer, to_read_bytes);
 				print_pretty(buffer, to_read_bytes);
-			} else printf("Failed to open file %s", filepath);
+			} else printf("Failed to open file %s\n", filepath);
 		}
 		else
 		{
 			printf("Please mount an image and open a file\n");	
 		}
+	else
+		printf("Only read files for now\n");
 	return 0;
 }

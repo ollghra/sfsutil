@@ -128,22 +128,21 @@ uint64_t sfs_open(char * path)
 	printf("media size: 0x%"PRIx64" B\n", entry);
 	uint8_t buf[64];
 	do{
+		printf("--------------------------------------------------------------------------");
 		entry -= 64;
-		buffer_read((size_t *)buf, 64, sizeof(uint8_t), entry);
+		buffer_read(buf, 64, sizeof(uint8_t), entry);
 		index_entry.type = buf[0];
 		print_pretty(buf, 64);
 		if(index_entry.type == FILE_ENTRY)
 		{
-			char str[30];
-			sfs_atos(&buf[0x22], 30, str);
-			printf("File found:\nname: %s\n", str);
-			if(strcmp(str, path) == 0){
+			printf("File found:\nname: %s", &buf[0x22]);
+			if(strcmp(&buf[0x22], path) == 0){
 				printf("File opened\n");
 				return entry;
 			}
 		}
 	} while(index_entry.type != START_MARKER);
-	printf("Failed to open file");
+	printf("Failed to open file\n");
 	return 0;	
 }
 int sfs_read(size_t file_offset, uint8_t * buf, size_t count)
