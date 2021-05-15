@@ -16,6 +16,6 @@ int sfs_mount(char* path);
 #define	DELETED_FLAG	0x08
 #define CONTINUATION	0x20
 
-void print_pretty(uint8_t * buf, int nbytes);
+void print_pretty(uint8_t * buf, size_t nbytes);
 
 #endif

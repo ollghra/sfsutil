@@ -83,24 +83,29 @@ int sfs_mount(char * path)
 	printf("Mounting SFS image %s\n", path);
 	if(buffer_open(path))
 		return 1;
-	printf("Superblock:\ntimestamp: 0x%" PRIX64 "\ndata area: %" PRIu64 " blocks\nMagic?: %" PRIX32 "\n\
-version: %" PRIX8 "\ntotal blocks: %" PRIu64 "\nreserved blocks: %" PRIu32 "\nblock size: %" PRIu16 "B\n\
-checksum?: %s\n",
-	SFS_Superblock.timestamp, SFS_Superblock.data_size, SFS_Superblock.Magic_version & 0xFFFFFF,
-	(SFS_Superblock.Magic_version & 0xFF000000) >> (24), SFS_Superblock.total_blocks, SFS_Superblock.reserved_blocks, SFS_Superblock.block_size * 256,
-	"Not yet implemented\0");
+	printf("=Superblock:\n=>timestamp: 0x%" PRIX64 "\n=>data area: %"\
+            PRIu64 " blocks\n=>Magic?: %" PRIX32 "\n=>version: %" PRIX8\
+            "\n=>total blocks: %" PRIu64 "\n=>reserved blocks: %" PRIu32 \
+            "\n=>block size: %" PRIu16 "B\nchecksum?: %s\n",
+	SFS_Superblock.timestamp, SFS_Superblock.data_size, 
+    SFS_Superblock.Magic_version & 0xFFFFFF, 
+    (SFS_Superblock.Magic_version & 0xFF000000) >> (24), 
+    SFS_Superblock.total_blocks, SFS_Superblock.reserved_blocks, 
+    SFS_Superblock.block_size * 256, "Not yet implemented\0");
 	return 0;
 }
 /* nbytes must be a multiple of 64*/
-void print_pretty(uint8_t * buf, int nbytes)
+void print_pretty(uint8_t * buf, size_t nbytes)
 {
-	for(int i = 0; i < nbytes;)
+    const int ROW_WIDTH = 16;
+	for(int i = 0; i < nbytes; i+= ROW_WIDTH)
 	{
-		for(int j = 0; j < 16; j++, i++)
+//if((nbytes-i)/ROW_WIDTH == 0) printf("L");
+        // Only print remaining bytes, not rubbish
+		for(int j = 0; j < (((nbytes-i)/ROW_WIDTH == 0) ? (nbytes-i)%ROW_WIDTH : ROW_WIDTH) ; j++)
 		{
-			if(j == 8)
-			   	printf("  ");
-			printf("%02" PRIX8 " ", buf[i]);
+			if(j == 8) printf(" ");
+			printf("%02" PRIX8 " ", buf[i+j]);
 		}
 		printf("\n");
 	}
@@ -128,14 +133,13 @@ uint64_t sfs_open(char * path)
 	printf("media size: 0x%"PRIx64" B\n", entry);
 	uint8_t buf[64];
 	do{
-		printf("--------------------------------------------------------------------------");
 		entry -= 64;
 		buffer_read(buf, 64, sizeof(uint8_t), entry);
 		index_entry.type = buf[0];
-		print_pretty(buf, 64);
+        //print_pretty(buf, 64);
 		if(index_entry.type == FILE_ENTRY)
 		{
-			printf("File found:\nname: %s", &buf[0x22]);
+			printf("File found:\nname: %s\n", &buf[0x22]);
 			if(strcmp(&buf[0x22], path) == 0){
 				printf("File opened\n");
 				return entry;
