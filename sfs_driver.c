@@ -80,7 +80,6 @@ int buffer_read(void * buf, size_t count, size_t size, uint64_t offset)
 
 int sfs_mount(char * path)
 {
-	printf("Mounting SFS image %s\n", path);
 	if(buffer_open(path))
 		return 1;
 	printf("=Superblock:\n=>timestamp: 0x%" PRIX64 "\n=>data area: %"\

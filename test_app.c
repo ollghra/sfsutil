@@ -79,9 +79,9 @@ int main(int argc, char **argv)
 	}
     if(f.mount)
     {
-        printf("Mounting %s...", imgpath);
+        printf("/Mounting %s...\n", imgpath);
         sfs_mount(imgpath);
-        printf("mounted\n");
+        printf("\\mounted\n");
     }
     if(f.info)
         printf("Return info of something\n");
